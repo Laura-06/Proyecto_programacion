@@ -40,6 +40,7 @@ const express_1 = __importDefault(require("express"));
 const asignaturaController = __importStar(require("../controllers/asignaturaController"));
 const asignaturaRouter = express_1.default.Router();
 exports.asignaturaRouter = asignaturaRouter;
+//Metodo post -> Crear
 asignaturaRouter.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const newAsignatura = req.body;
     asignaturaController.create(newAsignatura, (err, result) => {
@@ -49,3 +50,52 @@ asignaturaRouter.post('/', (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(result.statusCode).json(result);
     });
 }));
+// Método GET -> (Obtener todas las asignaturas)
+asignaturaRouter.get('/', (req, res) => {
+    asignaturaController.findAll((err, result) => {
+        if (err) {
+            return res.status(500).json({ message: err.message });
+        }
+        res.status(200).json(result);
+    });
+});
+// Método GET -> (Obtener una asignatura específica)
+asignaturaRouter.get('/:id', (req, res) => {
+    const id = req.params.id;
+    asignaturaController.findById(id, (err, result) => {
+        if (err) {
+            return res.status(500).json({ message: err.message });
+        }
+        if (!result) {
+            return res.status(404).json({ message: 'Asignatura no encontrada' });
+        }
+        res.status(200).json(result);
+    });
+});
+// Método PUT -> Actualizar
+asignaturaRouter.put('/:id', (req, res) => {
+    const id = req.params.id;
+    const updatedAsignatura = req.body;
+    asignaturaController.update(id, updatedAsignatura, (err, result) => {
+        if (err) {
+            return res.status(500).json({ message: err.message });
+        }
+        if (!result) {
+            return res.status(404).json({ message: 'Asignatura no encontrada' });
+        }
+        res.status(200).json({ message: 'Asignatura actualizada exitosamente', data: result });
+    });
+});
+// Método DELETE -> Eliminar
+asignaturaRouter.delete('/:id', (req, res) => {
+    const id = req.params.id;
+    asignaturaController.deleteById(id, (err, result) => {
+        if (err) {
+            return res.status(500).json({ message: err.message });
+        }
+        if (!result) {
+            return res.status(404).json({ message: 'Asignatura no encontrada' });
+        }
+        res.status(200).json({ message: 'Asignatura eliminada exitosamente' });
+    });
+});

@@ -1,10 +1,13 @@
+// Espera a que el DOM se haya cargado completamente
 document.addEventListener("DOMContentLoaded", () => {
-    const formulario = document.getElementById("formulario");
+    const formulario = document.getElementById("formulario"); // Obtiene el elemento HTML donde se renderizarán los formularios
 
+    // Función para generar un formulario dinámico según la entidad seleccionada
     const generarFormulario = (entidad) => {
-        let campos = [];
-        let formHTML = `<h2>Formulario de ${entidad}</h2><form id="${entidad.toLowerCase()}Form">`;
+        let campos = []; // Array para almacenar los campos que tendrá el formulario
+        let formHTML = `<h2>Formulario de ${entidad}</h2><form id="${entidad.toLowerCase()}Form">`; // Inicio del formulario en HTML
 
+        // Define los campos del formulario según la entidad seleccionada
         switch (entidad) {
             case "Estudiantes":
                 campos = [
@@ -36,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 break;
         }
 
+        // Genera los campos del formulario en HTML
         campos.forEach((campo) => {
             formHTML += `
                 <label for="${campo.id}">${campo.label}:</label>
@@ -43,58 +47,66 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
         });
 
+        // Agrega el botón para enviar el formulario
         formHTML += `<input type="submit" value="Guardar"></form>`;
+
+        // Agrega un botón para listar las entidades y una sección donde se mostrarán los datos
         formHTML += `
             <button id="listar${entidad}">Listar ${entidad}</button>
             <div id="lista${entidad}" class="lista"></div>
         `;
-        formulario.innerHTML = formHTML;
 
+        formulario.innerHTML = formHTML; // Inserta el formulario en el DOM
+
+        // Evento para enviar los datos del formulario al servidor
         document.getElementById(`${entidad.toLowerCase()}Form`).addEventListener("submit", (e) => {
-            e.preventDefault();
+            e.preventDefault(); // Evita que la página se recargue
 
-            const datos = {};
+            const datos = {}; // Objeto para almacenar los datos ingresados en el formulario
             campos.forEach((campo) => {
-                datos[campo.id] = document.getElementById(campo.id).value;
+                datos[campo.id] = document.getElementById(campo.id).value; // Asigna los valores ingresados al objeto
             });
 
+            // Realiza una solicitud POST al servidor para registrar los datos
             fetch(`http://127.0.0.1:3000/${entidad.toLowerCase()}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(datos),
+                body: JSON.stringify(datos), // Envía los datos como JSON
             })
                 .then((response) => {
                     if (response.ok) {
-                        return response.json();
+                        return response.json(); // Si la solicitud es exitosa, procesa la respuesta
                     } else {
-                        throw new Error('Error en la solicitud');
+                        throw new Error('Error en la solicitud'); // Si hay un error, lanza una excepción
                     }
                 })
                 .then(() => {
-                    alert('¡Registro exitoso!');
-                    document.getElementById(`${entidad.toLowerCase()}Form`).reset();
+                    alert('¡Registro exitoso!'); // Muestra un mensaje de éxito
+                    document.getElementById(`${entidad.toLowerCase()}Form`).reset(); // Limpia el formulario
                 })
                 .catch((error) => {
-                    console.error('Error:', error);
-                    alert('Hubo un problema al registrar. Por favor, intenta nuevamente.');
+                    console.error('Error:', error); // Muestra el error en la consola
+                    alert('Hubo un problema al registrar. Por favor, intenta nuevamente.'); // Muestra un mensaje de error al usuario
                 });
         });
 
+        // Evento para listar las entidades desde el servidor
         document.getElementById(`listar${entidad}`).addEventListener("click", () => listarEntidad(entidad));
     };
 
+    // Función para listar las entidades desde el servidor
     const listarEntidad = (entidad) => {
-        fetch(`http://127.0.0.1:3000/${entidad.toLowerCase()}`)
-            .then((response) => response.json())
+        fetch(`http://127.0.0.1:3000/${entidad.toLowerCase()}`) // Solicita los datos de la entidad
+            .then((response) => response.json()) // Convierte la respuesta a JSON
             .then((data) => {
-                const lista = document.getElementById(`lista${entidad}`);
+                const lista = document.getElementById(`lista${entidad}`); // Obtiene el contenedor donde se mostrarán los datos
                 lista.innerHTML = `
                     <table border="1">
                         <thead>
                             <tr>
-                                ${Object.keys(data[0] || {}).map((key) => `<th>${key}</th>`).join("")}
+                                ${Object.keys(data[0] || {}).map((key) => `<th>${key}</th>`).join("")} <!-- Crea las cabeceras de la tabla -->
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -105,118 +117,25 @@ document.addEventListener("DOMContentLoaded", () => {
                                     <tr>
                                         ${Object.values(item)
                                             .map((value) => `<td>${value}</td>`)
-                                            .join("")}
+                                            .join("")} <!-- Inserta los valores en las filas de la tabla -->
                                         <td>
-                                            <button onclick="editarEntidad('${entidad}', '${item.cod_e || item.id || item.cod_a}')">Editar</button>
-                                            <button onclick="eliminarEntidad('${entidad}', '${item.cod_e || item.id || item.cod_a}')">Eliminar</button>
+                                            <button onclick="editarEntidad('${entidad}', '${item.cod_e || item.id || item.cod_a}')">Editar</button> <!-- Botón para editar -->
+                                            <button onclick="eliminarEntidad('${entidad}', '${item.cod_e || item.id || item.cod_a}')">Eliminar</button> <!-- Botón para eliminar -->
                                         </td>
                                     </tr>
                                 `
                                 )
-                                .join("")}
+                                .join("")} <!-- Une todas las filas generadas -->
                         </tbody>
                     </table>
                 `;
             })
             .catch((error) => {
-                console.error('Error al listar:', error);
+                console.error('Error al listar:', error); // Muestra un error si no se puede listar
             });
     };
 
-    window.editarEntidad = (entidad, id) => {
-        // Obtén los datos actuales del registro desde el servidor
-        fetch(`http://127.0.0.1:3000/${entidad.toLowerCase()}/${id}`)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`Error al obtener los datos: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then((data) => {
-                // Generar un formulario para editar
-                const formularioEdicion = document.createElement("div");
-                formularioEdicion.innerHTML = `
-                    <h3>Editando ${entidad} con ID ${id}</h3>
-                    <form id="formEditar${entidad}">
-                        ${Object.entries(data)
-                            .map(([key, value]) => {
-                                // Crea un input por cada propiedad del objeto
-                                if (key === "id") {
-                                    return `<input type="hidden" id="${key}" value="${value}">`;
-                                }
-                                return `
-                                    <label for="${key}">${key}</label>
-                                    <input type="text" id="${key}" value="${value}">
-                                `;
-                            })
-                            .join("")}
-                        <input type="submit" value="Guardar Cambios">
-                    </form>
-                `;
-    
-                // Inserta el formulario en la página
-                const formulario = document.getElementById("formulario");
-                formulario.innerHTML = "";
-                formulario.appendChild(formularioEdicion);
-    
-                // Agrega el evento para enviar los datos
-                document
-                    .getElementById(`formEditar${entidad}`)
-                    .addEventListener("submit", (e) => {
-                        e.preventDefault();
-    
-                        // Captura los datos del formulario
-                        const nuevosDatos = {};
-                        Object.keys(data).forEach((key) => {
-                            nuevosDatos[key] = document.getElementById(key).value;
-                        });
-    
-                        // Envía los datos editados al servidor
-                        fetch(`http://127.0.0.1:3000/${entidad.toLowerCase()}/${id}`, {
-                            method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify(nuevosDatos),
-                        })
-                            .then((response) => {
-                                if (!response.ok) {
-                                    throw new Error(`Error al guardar los cambios: ${response.statusText}`);
-                                }
-                                return response.json();
-                            })
-                            .then(() => {
-                                alert("¡Cambios guardados exitosamente!");
-                                listarEntidad(entidad); // Refresca la lista
-                            })
-                            .catch((error) => {
-                                console.error("Error al guardar los cambios:", error);
-                                alert("Hubo un problema al guardar los cambios.");
-                            });
-                    });
-            })
-            .catch((error) => {
-                console.error("Error al cargar los datos para editar:", error);
-                alert("No se pudieron cargar los datos para editar.");
-            });
-    };
-    
-
-    window.eliminarEntidad = (entidad, id) => {
-        if (confirm(`¿Estás seguro de eliminar este ${entidad} con ID ${id}?`)) {
-            fetch(`http://127.0.0.1:3000/${entidad.toLowerCase()}/${id}`, {
-                method: 'DELETE',
-            })
-                .then(() => {
-                    alert('¡Eliminación exitosa!');
-                    listarEntidad(entidad);
-                })
-                .catch((error) => {
-                    console.error('Error al eliminar:', error);
-                });
-        }
-    };
-
+    // Eventos para generar formularios según la entidad seleccionada
     document.getElementById("btnEstudiantes").addEventListener("click", () => generarFormulario("Estudiantes"));
     document.getElementById("btnProfesores").addEventListener("click", () => generarFormulario("Profesores"));
     document.getElementById("btnAsignaturas").addEventListener("click", () => generarFormulario("Asignaturas"));
